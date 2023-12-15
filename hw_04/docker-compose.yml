@@ -1,0 +1,168 @@
+version: '2.1'
+
+services:
+  mai-db-node-ex01:
+    build:
+      context: mariadb
+      dockerfile: Dockerfile
+    container_name: mai-db-node-ex01
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: archdb
+      MYSQL_USER: stud
+      MYSQL_PASSWORD: stud
+      MYSQL_ROOT_PASSWORD: '1'
+    command: >
+      --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+      --general-log=ON
+      --log-queries-not-using-indexes=ON
+    networks:
+      - arch-network
+    ports:
+      - 3360:3306
+    healthcheck:
+      test: "/usr/bin/mariadb --user=stud --password=stud --execute \"SHOW DATABASES;\""
+      timeout: 20s
+      retries: 5
+    volumes:
+      - ~/maria-db-mai-arch-volume-1:/var/lib/mysql
+
+  mai-db-node-ex02:
+    build:
+      context: mariadb
+      dockerfile: Dockerfile
+    container_name: mai-db-node-ex02
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: archdb
+      MYSQL_USER: stud
+      MYSQL_PASSWORD: stud
+      MYSQL_ROOT_PASSWORD: '1'
+    command: >
+      --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+      --general-log=ON
+      --log-queries-not-using-indexes=ON
+    networks:
+      - arch-network
+    ports:
+      - 3361:3306
+    healthcheck:
+      test: "/usr/bin/mariadb --user=stud --password=stud --execute \"SHOW DATABASES;\""
+      timeout: 20s
+      retries: 5
+    volumes:
+      - ~/maria-db-mai-arch-volume-2:/var/lib/mysql
+
+  all-db:
+    build:
+      context: proxysql
+    healthcheck:
+      test: "/usr/bin/mysql -h 127.0.0.1 -P 6033 --user=stud --password=stud --execute \"SHOW DATABASES;\""
+      timeout: 20s
+      retries: 5
+    networks:
+      - arch-network
+    ports:
+      # Mysql Client Port
+      - 6033:6033
+      # Mysql Admin Port
+      - 6032:6032
+    depends_on:
+      - mai-db-node-ex01
+      - mai-db-node-ex02
+    volumes:
+      - ~/proxysql-data:/var/lib/proxysql
+
+  init-db:
+    build:
+      context: mariadb/init
+    networks:
+      - arch-network
+    depends_on:
+      all-db:
+        condition: service_healthy
+
+  cache:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - 6379:6379
+    command: redis-server --save 20 1 --loglevel warning
+    networks:
+      - arch-network
+    volumes:
+      - ~/cache:/data
+
+
+  auth-service:
+    build:
+      context: .
+    environment:
+      - DB_HOST=all-db
+      - DB_PORT=6033
+      - DB_DATABASE=archdb
+      - DB_LOGIN=stud
+      - DB_PASSWORD=stud
+      - CACHE=cache:6379
+    ports:
+      - "8080:8080"
+    entrypoint: /app/build/auth_service
+    networks:
+      - arch-network
+    depends_on:
+      cache:
+        condition: service_started
+      all-db:
+        condition: service_healthy
+
+  trip-service:
+    build:
+      context: .
+    environment:
+      - DB_HOST=all-db
+      - DB_PORT=6033
+      - DB_DATABASE=archdb
+      - DB_LOGIN=stud
+      - DB_PASSWORD=stud
+      - SERVICE_HOST=auth-service
+      - CACHE=cache:6379
+    ports:
+      - "8081:8081"
+    entrypoint: /app/build/trip_service
+    networks:
+      - arch-network
+    depends_on:
+      all-db:
+        condition: service_healthy
+
+  route-service:
+    build:
+      context: .
+    environment:
+      - DB_HOST=all-db
+      - DB_PORT=6033
+      - DB_DATABASE=archdb
+      - DB_LOGIN=stud
+      - DB_PASSWORD=stud
+      - SERVICE_HOST=auth-service
+      - PRODUCT_HOST=product-service
+      - CACHE=cache:6379
+    ports:
+      - "8082:8082"
+    entrypoint: /app/build/route_service
+    networks:
+      - arch-network
+    depends_on:
+      all-db:
+        condition: service_healthy
+
+volumes:
+  maria-db-mai-arch-volume-1:
+  maria-db-mai-arch-volume-2:
+  proxysql-data:
+  cache:
+
+networks:
+  arch-network:
+    driver: "bridge"
+    external: false

@@ -1,0 +1,36 @@
+openapi: '3.0.2'
+info:
+  title: Carts API
+  version: '0.0.1'
+servers:
+  - url: http://localhost:8082
+paths:
+  /get:
+    get:
+      description: Searches cart by authorized user
+      responses:
+        '200':
+          description: Returns user cart (with zero or more products in it)
+  /add:
+    post:
+      parameters:
+        - name: id
+          in: query
+          description: ID of a product to add
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully added
+        '400':
+          description: Selected a product that doesn't exist
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
+security:
+  - basicAuth: []

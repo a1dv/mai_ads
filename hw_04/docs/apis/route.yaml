@@ -1,0 +1,62 @@
+openapi: '3.0.2'
+info:
+  title: route API
+  version: '0.0.1'
+servers:
+  - url: http://localhost:8082
+paths:
+  /add:
+    post:
+      parameters:
+        - name: from
+          in: query
+          description: the beginning of the route
+          required: true
+          schema:
+            type: string
+        - name: to
+          in: query
+          description: the beginning of the route
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully added
+        '400':
+          description: Selected a route that doesn't exist
+  /search:
+    get:
+      summary: Получение маршрутов пользователя
+      responses:
+        '200':
+          description: Маршруты пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/routes'
+
+components:
+  schemas:
+      route:
+        type: object
+        properties:
+          from:
+            type: string
+          to:
+            type: string
+          distance:
+            type: number
+          duration:
+            type: string
+      routes:
+        type: array
+        items:
+          $ref: '#/components/schemas/route'
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
+security:
+  - basicAuth: []

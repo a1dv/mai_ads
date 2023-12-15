@@ -1,0 +1,76 @@
+openapi: '3.0.2'
+info:
+  title: trip API
+  version: '0.0.1'
+servers:
+  - url: http://localhost:8081
+paths:
+  /search:
+    get:
+      parameters:
+        - name: id
+          in: query
+          description: id of trip
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 'successfully get'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/trip'
+        '404':
+          description: 'not found'
+  /add:
+    post:
+      parameters:
+        - name: route_id
+          in: query
+          description: id of route
+          required: true
+          schema:
+            type: integer
+        - name: date
+          in: query
+          description: date of trip
+          required: true
+          schema:
+            type: string
+      responses:
+          '200':
+            description: 'created'
+          '400':
+            description: 'bad request'
+  /add_user:
+    patch:
+      parameters:
+        - name: id
+          in: query
+          description: trip id
+          required: true
+          schema:
+            type: integer
+      responses:
+          '200':
+            description: 'created'
+          '400':
+            description: 'bad request'
+
+components:
+  schemas:
+    trip:
+      type: object
+      properties:
+        date:
+          type: string
+        route:
+          $ref: 'route.yaml#/components/schemas/route'
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
+security:
+  - basicAuth: []        

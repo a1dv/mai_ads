@@ -1,0 +1,57 @@
+openapi: '3.0.2'
+info:
+  title: Product API
+  version: '0.0.1'
+servers:
+  - url: http://localhost:8081
+paths:
+  /get:
+    get:
+      parameters:
+        - name: id
+          in: query
+          description: Returns specified id instead of all
+          required: false
+          schema:
+            type: integer
+
+      responses:
+        '200':
+          description: Found one or all products
+        '404':
+          description: No products found
+  /create:
+    post:
+      parameters:
+        - name: name
+          in: query
+          description: Name of a product
+          required: true
+          schema:
+            type: string
+        - name: count
+          in: query
+          description: Amount of a product
+          required: true
+          schema:
+            type: integer
+        - name: value
+          in: query
+          description: Value of a product
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully added
+        '400':
+          description: Missing fields in request
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
+security:
+  - basicAuth: []

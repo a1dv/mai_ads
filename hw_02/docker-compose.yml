@@ -1,0 +1,101 @@
+version: '2.1'
+
+services:
+  all-db:
+    build:
+      context: mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: archdb
+      MYSQL_USER: stud
+      MYSQL_PASSWORD: stud
+      MYSQL_ROOT_PASSWORD: '1'
+    command: >
+      --sql-mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+      --general-log=ON
+      --log-queries-not-using-indexes=ON
+    networks:
+      - arch-network
+    ports:
+      - "3360:3306"
+    healthcheck:
+      test: "/usr/bin/mariadb --user=stud --password=stud --execute \"SHOW DATABASES;\""
+      interval: 15s
+      timeout: 1s
+      retries: 5
+    volumes:
+      - ~/maria-db-mai-arch:/var/lib/mysql
+
+  init-db:
+    build:
+      context: mariadb/init
+    networks:
+      - arch-network
+    depends_on:
+      all-db:
+        condition: service_healthy
+
+  auth-service:
+    build:
+      context: .
+    environment:
+      - DB_HOST=all-db
+      - DB_PORT=3306
+      - DB_DATABASE=archdb
+      - DB_LOGIN=stud
+      - DB_PASSWORD=stud
+    ports:
+      - "8080:8080"
+    entrypoint: /app/build/auth_service
+    networks:
+      - arch-network
+    depends_on:
+      all-db:
+        condition: service_healthy
+
+  trip-service:
+    build:
+      context: .
+    environment:
+      - DB_HOST=all-db
+      - DB_PORT=3306
+      - DB_DATABASE=archdb
+      - DB_LOGIN=stud
+      - DB_PASSWORD=stud
+      - SERVICE_HOST=auth-service
+    ports:
+      - "8081:8081"
+    entrypoint: /app/build/trip_service
+    networks:
+      - arch-network
+    depends_on:
+      all-db:
+        condition: service_healthy
+
+  route-service:
+    build:
+      context: .
+    environment:
+      - DB_HOST=all-db
+      - DB_PORT=3306
+      - DB_DATABASE=archdb
+      - DB_LOGIN=stud
+      - DB_PASSWORD=stud
+      - SERVICE_HOST=auth-service
+      - PRODUCT_HOST=product-service
+    ports:
+      - "8082:8082"
+    entrypoint: /app/build/route_service
+    networks:
+      - arch-network
+    depends_on:
+      all-db:
+        condition: service_healthy
+
+volumes:
+  maria-db-mai-arch:
+
+networks:
+  arch-network:
+    driver: "bridge"
+    external: false

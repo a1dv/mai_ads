@@ -1,0 +1,16 @@
+================================ Using 1 connections and threads
+No cache	  5171 requests in 10.01s, 1.47MB read
+With cache	  8622 requests in 10.01s, 2.47MB read
+
+================================ Using 2 connections and threads
+No cache	  6541 requests in 10.02s, 1.82MB read
+With cache	  9040 requests in 10.01s, 2.57MB read
+
+================================ Using 5 connections and threads
+No cache	  7520 requests in 10.03s, 2.12MB read
+With cache	  11936 requests in 10.03s, 3.35MB read
+
+================================ Using 10 connections and threads
+No cache	  8267 requests in 10.03s, 2.33MB read
+With cache	  13977 requests in 10.03s, 3.94MB read
+
